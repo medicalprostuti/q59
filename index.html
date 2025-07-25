@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "হাইড্রোজেন পরমাণুতে প্রথম ও দ্বিতীয় উত্তেজিত স্তরের শক্তির অনুপাত-",
+          options: {
+            a: "1:4",
+            b: "4:4",
+            c: "9:4",
+            d: "4:1",
+          },
+          correct: "c",
+          explanation:
+            "<p>হাইড্রোজেন পরমাণুর n-তম কক্ষপথের শক্তি E<sub>n</sub> ∝ 1/n²।<br>প্রথম উত্তেজিত স্তর (n=2) এবং দ্বিতীয় উত্তেজিত স্তর (n=3)।<br>শক্তির অনুপাত |E<sub>2</sub>|:|E<sub>3</sub>| = (1/2²):(1/3²) = 1/4 : 1/9 = 9:4।</p>",
+        },
+        {
+          id: 2,
+          question:
+            "হাইড্রোজেন পরমাণুর ১ম উত্তেজিত ও ২য় উত্তেজিত কক্ষপথের ব্যাসার্ধের অনুপাত-",
+          options: {
+            a: "1:2",
+            b: "1:4",
+            c: "4:9",
+            d: "9:6",
+          },
+          correct: "c",
+          explanation:
+            "<p>হাইড্রোজেন পরমাণুর n-তম কক্ষপথের ব্যাসার্ধ r<sub>n</sub> ∝ n²।<br>প্রথম উত্তেজিত কক্ষপথ (n=2) এবং দ্বিতীয় উত্তেজিত কক্ষপথ (n=3)।<br>ব্যাসার্ধের অনুপাত r<sub>2</sub>:r<sub>3</sub> = 2²:3² = 4:9।</p>",
+        },
+        {
+          id: 3,
+          question:
+            "একটি হাইড্রোজেন পরমাণুর স্থির কক্ষপথে অবস্থিত ইলেকট্রনের বিভব শক্তি এবং গতিশক্তি যথাক্রমে E<sub>p</sub> এবং E<sub>k</sub> এদের অনুপাত নিম্নের কোনটি?",
+          options: {
+            a: "2",
+            b: "-1",
+            c: "1",
+            d: "-2",
+          },
+          correct: "d",
+          explanation:
+            "<p>বোর মডেল অনুসারে, হাইড্রোজেন পরমাণুর ইলেকট্রনের গতিশক্তি E<sub>k</sub> = kZe²/2r<sub>n</sub> এবং বিভব শক্তি E<sub>p</sub> = -kZe²/r<sub>n</sub>।<br>এখান থেকে দেখা যায় যে, E<sub>p</sub> = -2 * E<sub>k</sub>। সুতরাং, অনুপাত E<sub>p</sub>/E<sub>k</sub> = -2।</p>",
+        },
+        {
+          id: 4,
+          question: "He⁺ ও H-এর প্রথম বোর কক্ষপথের ব্যাসের অনুপাত কত?",
+          options: {
+            a: "2:1",
+            b: "1:2",
+            c: "4:1",
+            d: "1:4",
+          },
+          correct: "b",
+          explanation:
+            "<p>বোর মডেল অনুসারে, n-তম কক্ষপথের ব্যাসার্ধ r<sub>n</sub> ∝ n²/Z।<br>He⁺ এর জন্য Z=2, r<sub>He+</sub> ∝ 1²/2 = 1/2।<br>H এর জন্য Z=1, r<sub>H</sub> ∝ 1²/1 = 1।<br>ব্যাসার্ধের অনুপাত r<sub>He+</sub>:r<sub>H</sub> = 1/2:1 = 1:2। ব্যাসের অনুপাতও একই হবে।</p>",
+        },
+        {
+          id: 5,
+          question:
+            "হাইড্রোজেন পরমাণুতে প্রথম বোর কক্ষের ইলেকট্রনের গতিবেগ আলোর গতিবেগ সাপেক্ষে-",
+          options: {
+            a: "1/137",
+            b: "1/11",
+            c: "1/274",
+            d: "1/2",
+          },
+          correct: "a",
+          explanation:
+            "<p>হাইড্রোজেন পরমাণুর প্রথম বোর কক্ষের ইলেকট্রনের গতিবেগ (v₁) এবং আলোর গতিবেগ (c) এর অনুপাত ফাইন স্ট্রাকচার কন্সট্যান্ট (α) এর সমান, যার মান প্রায় 1/137।</p>",
+        },
+        {
+          id: 6,
+          question:
+            "হাইড্রোজেন পরমাণুর ইলেকট্রনের প্রথম উত্তেজিত অবস্থায় মোট শক্তি –3.4 eV। এই অবস্থায় ইলেকট্রনের স্থিতিশক্তি-",
+          options: {
+            a: "-6.8 eV",
+            b: "6.8 eV",
+            c: "3.4 eV",
+            d: "-3.4 eV",
+          },
+          correct: "a",
+          explanation:
+            "<p>বোর মডেলে, ইলেকট্রনের মোট শক্তি (E) এবং স্থিতিশক্তি (E<sub>p</sub>) এর মধ্যে সম্পর্ক হলো E<sub>p</sub> = 2E।<br>এখানে, E = -3.4 eV।<br>অতএব, স্থিতিশক্তি E<sub>p</sub> = 2 * (-3.4 eV) = -6.8 eV।</p>",
+        },
+        {
+          id: 7,
+          question: "প্রথম তিনটি বোর কক্ষপথের ব্যাসার্ধের অনুপাত হচ্ছে-",
+          options: {
+            a: "1:1:9",
+            b: "1:2:3",
+            c: "1:4:9",
+            d: "1:8:27",
+          },
+          correct: "c",
+          explanation:
+            "<p>বোর মডেল অনুসারে, n-তম কক্ষপথের ব্যাসার্ধ r<sub>n</sub> ∝ n²।<br>প্রথম তিনটি কক্ষপথের (n=1, 2, 3) ব্যাসার্ধের অনুপাত হবে r₁:r₂:r₃ = 1²:2²:3² = 1:4:9।</p>",
+        },
+        {
+          id: 8,
+          question:
+            "হাইড্রোজেন সদৃশ একটি পরমাণুতে একটি ইলেকট্রন উদ্দীপিত স্তরে আছে। এর মোট শক্তি –3.4 eV। ইলেকট্রনটির গতিশক্তি-",
+          options: {
+            a: "-3.4 eV",
+            b: "3.4 eV",
+            c: "-13.6 eV",
+            d: "13.6 eV",
+          },
+          correct: "b",
+          explanation:
+            "<p>বোর মডেল অনুসারে, ইলেকট্রনের মোট শক্তি (E) এবং গতিশক্তি (E<sub>k</sub>) এর মধ্যে সম্পর্ক হলো E = -E<sub>k</sub>।<br>এখানে, E = -3.4 eV।<br>সুতরাং, গতিশক্তি E<sub>k</sub> = -E = -(-3.4 eV) = 3.4 eV।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "হাইড্রোজেন পরমাণুর প্রথম বোর কক্ষে ইলেকট্রনের মোট শক্তি -13.6 eV হলে, দ্বিতীয় বোর কক্ষেই মোট শক্তি কত হবে?",
+          options: {
+            a: "-1.5 eV",
+            b: "-3.4 eV",
+            c: "-4.5 eV",
+            d: "-40.8 eV",
+          },
+          correct: "b",
+          explanation:
+            "<p>হাইড্রোজেন পরমাণুর n-তম কক্ষপথের শক্তি E<sub>n</sub> = -13.6/n² eV।<br>দ্বিতীয় বোর কক্ষের জন্য n = 2।<br>E₂ = -13.6/2² = -13.6/4 = -3.4 eV।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "হাইড্রোজেন পরমাণুতে ভূমি স্তরে এবং প্রথম উত্তেজিত স্তরে অবস্থিত ইলেকট্রনের গতিবেগের অনুপাত কত?",
+          options: {
+            a: "2:1",
+            b: "1:4",
+            c: "4:1",
+            d: "8:1",
+          },
+          correct: "a",
+          explanation:
+            "<p>বোর মডেল অনুসারে, n-তম কক্ষপথে ইলেকট্রনের গতিবেগ v<sub>n</sub> ∝ 1/n।<br>ভূমি স্তরের জন্য n = 1, প্রথম উত্তেজিত স্তরের জন্য n = 2।<br>গতিবেগের অনুপাত v₁:v₂ = (1/1):(1/2) = 1:1/2 = 2:1।</p>",
+        },
+        {
+          id: 11,
+          question:
+            "হাইড্রোজেন পরমাণুর একটি ইলেকট্রন যখন n = 3 কক্ষ থেকে n = 2 কক্ষে আসে তখন নিঃসৃত বিকিরণের তরঙ্গদৈর্ঘ্য কত হয়?",
+          options: {
+            a: "5R/36",
+            b: "11R/36",
+            c: "36/5R",
+            d: "36/11R",
+          },
+          correct: "c",
+          explanation:
+            "<p>রিডবার্গ সূত্র অনুসারে: 1/λ = R (1/n<sub>f</sub>² - 1/n<sub>i</sub>²)।<br>এখানে n<sub>i</sub>=3, n<sub>f</sub>=2।<br>1/λ = R (1/2² - 1/3²) = R (1/4 - 1/9) = R(5/36)।<br>λ = 36 / (5R)।</p>",
+        },
+        {
+          id: 12,
+          question:
+            "অ্যালুমিনিয়ামের নিউক্লিয়াসের সংকেত ₁₃Al²⁷ হলে, প্রোটন সংখ্যা কত?",
+          options: {
+            a: "27",
+            b: "7",
+            c: "14",
+            d: "13",
+          },
+          correct: "d",
+          explanation:
+            "<p>কোনো মৌলের সংকেত <sub>Z</sub>X<sup>A</sup>-তে, Z হলো পারমাণবিক সংখ্যা বা প্রোটন সংখ্যা। <sub>13</sub>Al<sup>27</sup> সংকেতে, প্রোটন সংখ্যা 13।</p>",
+        },
+        {
+          id: 13,
+          question:
+            "16 ভর সংখ্যার নিউক্লিয়াসের ব্যাসার্ধ 3 x 10⁻¹² m হলে, 128 ভর সংখ্যার নিউক্লিয়াসের ব্যাসার্ধ হবে-",
+          options: {
+            a: "6 x 10⁻¹² m",
+            b: "12 x 10⁻¹² m",
+            c: "18 x 10⁻¹² m",
+            d: "24 x 10⁻¹² m",
+          },
+          correct: "a",
+          explanation:
+            "<p>নিউক্লিয়াসের ব্যাসার্ধ R ∝ A<sup>1/3</sup>।<br>R₂/R₁ = (A₂/A₁)<sup>1/3</sup> = (128/16)<sup>1/3</sup> = 8<sup>1/3</sup> = 2।<br>R₂ = 2 * R₁ = 2 * (3 x 10⁻¹² m) = 6 x 10⁻¹² m।</p>",
+        },
+        {
+          id: 14,
+          question:
+            "একটি তেজস্ক্রিয় পদার্থের অর্ধায়ু 15 দিন। 2.5 g ওজনের ঐ পদার্থের নিম্নের কত (g) 60 দিন পর্যন্ত থাকবে?",
+          options: {
+            a: "0.156",
+            b: "0.312",
+            c: "0.125",
+            d: "0.250",
+          },
+          correct: "a",
+          explanation:
+            "<p>মোট সময় = 60 দিন। অর্ধায়ু = 15 দিন।<br>অর্ধায়ুর সংখ্যা (n) = 60/15 = 4।<br>অবশিষ্ট পরিমাণ = N₀ * (1/2)ⁿ = 2.5 * (1/2)⁴ = 2.5 / 16 = 0.15625 g।</p>",
+        },
+        {
+          id: 15,
+          question: "রেডিয়ামের গড় আয়ু এবং অর্ধায়ুর অনুপাত-",
+          options: {
+            a: "0.367",
+            b: "0.367",
+            c: "0.693",
+            d: "1.44",
+          },
+          correct: "d",
+          explanation:
+            "<p>অর্ধায়ু (T<sub>1/2</sub>) এবং গড় আয়ু (τ) এর সম্পর্ক: T<sub>1/2</sub> = τ * ln(2)।<br>গড় আয়ু / অর্ধায়ু = τ / T<sub>1/2</sub> = 1 / ln(2) ≈ 1 / 0.693 ≈ 1.443।</p>",
+        },
+        {
+          id: 16,
+          question:
+            "কোনো তেজস্ক্রিয় মৌলের অর্ধায়ু 10 দিন। উক্ত মৌলের 75% ক্ষয় হতে কত সময় লাগবে?",
+          options: {
+            a: "2 d",
+            b: "4 d",
+            c: "20 d",
+            d: "25 d",
+          },
+          correct: "c",
+          explanation:
+            "<p>75% ক্ষয় মানে অবশিষ্ট থাকবে 25% বা 1/4 অংশ। 1/4 = (1/2)²।<br>সুতরাং, 2টি অর্ধায়ু সময় লাগবে।<br>মোট সময় = 2 * অর্ধায়ু = 2 * 10 দিন = 20 দিন।</p>",
+        },
+        {
+          id: 17,
+          question: "রেডনের অর্ধায়ু 3.82 দিন। এর ক্ষয় ধ্রুবকের মান কত?",
+          options: {
+            a: "5.05/d",
+            b: "0.181/d",
+            c: "0.581/d",
+            d: "0.284/d",
+          },
+          correct: "b",
+          explanation:
+            "<p>ক্ষয় ধ্রুবক (λ) = ln(2) / T<sub>1/2</sub> ≈ 0.693 / 3.82 ≈ 0.1814 /d।</p>",
+        },
+        {
+          id: 18,
+          question:
+            "দুই ঘণ্টা পর কোনো তেজস্ক্রিয় বস্তুর প্রাথমিক পরিমাণের 1/16 অংশ অক্ষত থাকে। উক্ত তেজস্ক্রিয় বস্তুর অর্ধায়ু হলো-",
+          options: {
+            a: "15 মিনিট",
+            b: "30 মিনিট",
+            c: "45 মিনিট",
+            d: "60 মিনিট",
+          },
+          correct: "b",
+          explanation:
+            "<p>অবশিষ্ট অংশ 1/16 = (1/2)⁴। সুতরাং, 4টি অর্ধায়ু সময় পার হয়েছে।<br>মোট সময় = 2 ঘণ্টা = 120 মিনিট।<br>অর্ধায়ু = 120 মিনিট / 4 = 30 মিনিট।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "14min শেষে তেজস্ক্রিয় polonium এর 1/16 অংশ অবশিষ্ট থাকে। মৌলটির অর্ধায়ু কত?",
+          options: {
+            a: "7/8 min",
+            b: "7 min",
+            c: "7/2 min",
+            d: "1/4 min",
+          },
+          correct: "c",
+          explanation:
+            "<p>অবশিষ্ট অংশ 1/16 = (1/2)⁴। সুতরাং, 4টি অর্ধায়ু সময় পার হয়েছে।<br>মোট সময় = 14 মিনিট।<br>অর্ধায়ু = 14 মিনিট / 4 = 7/2 মিনিট।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "কোনো তেজস্ক্রিয় মৌলের ক্ষয় ধ্রুবকের মান 0.01/s। এর অর্ধায়ু-",
+          options: {
+            a: "0.693 s",
+            b: "6.93 s",
+            c: "69.3 s",
+            d: "693 s",
+          },
+          correct: "c",
+          explanation:
+            "<p>অর্ধায়ু (T<sub>1/2</sub>) = ln(2) / λ ≈ 0.693 / 0.01 = 69.3 s।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "ট্রিটিয়ামের অর্ধায়ু 12.5 বছর। 25 বছর পর 1gm ট্রিটিয়াম কত গ্রাম হবে?",
+          options: {
+            a: "0.5 gm",
+            b: "0.75 gm",
+            c: "0.25 gm",
+            d: "0.125 gm",
+          },
+          correct: "c",
+          explanation:
+            "<p>মোট সময় = 25 বছর। অর্ধায়ু = 12.5 বছর।<br>অর্ধায়ুর সংখ্যা (n) = 25 / 12.5 = 2।<br>অবশিষ্ট পরিমাণ = 1 * (1/2)² = 1/4 = 0.25 gm।</p>",
+        },
+        {
+          id: 22,
+          question:
+            "একটি তেজস্ক্রিয় পদার্থের অর্ধায়ু 5 y। কত বছর পর ওই তেজস্ক্রিয় পদার্থের 1/32 অংশ অপরিবর্তিত থাকবে?",
+          options: {
+            a: "10 y",
+            b: "20 y",
+            c: "25 y",
+            d: "30 y",
+          },
+          correct: "c",
+          explanation:
+            "<p>অবশিষ্ট অংশ 1/32 = (1/2)⁵। সুতরাং, 5টি অর্ধায়ু সময় লাগবে।<br>মোট সময় = 5 * অর্ধায়ু = 5 * 5 বছর = 25 বছর।</p>",
+        },
+        {
+          id: 23,
+          question: "Au এর অবক্ষয় ধ্রুবক 0.257 d⁻¹। Au এর অর্ধায়ু কত?",
+          options: {
+            a: "0.27 d",
+            b: "0.72 d",
+            c: "7.20 d",
+            d: "2.70 d",
+          },
+          correct: "d",
+          explanation:
+            "<p>অর্ধায়ু (T<sub>1/2</sub>) = ln(2) / λ ≈ 0.693 / 0.257 ≈ 2.697 d, যা প্রায় 2.70 d।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "একটি তেজস্ক্রিয় মৌলের অর্ধায়ু 1.8 দিন। 5.4 দিন পরে মৌলটির কত অংশ ক্ষয়প্রাপ্ত হবে?",
+          options: {
+            a: "1/8 অংশ",
+            b: "3/4 অংশ",
+            c: "1/4 অংশ",
+            d: "7/8 অংশ",
+          },
+          correct: "d",
+          explanation:
+            "<p>মোট সময় = 5.4 দিন। অর্ধায়ু = 1.8 দিন।<br>অর্ধায়ুর সংখ্যা (n) = 5.4 / 1.8 = 3।<br>অবশিষ্ট অংশ = (1/2)³ = 1/8 অংশ।<br>ক্ষয়প্রাপ্ত অংশ = 1 - 1/8 = 7/8 অংশ।</p>",
+        },
+        {
+          id: 25,
+          question:
+            "কোনো তেজস্ক্রিয় মৌলের অর্ধ জীবন 40 দিন। মৌলটি সম্পূর্ণ ক্ষয় হতে কত সময় লাগবে?",
+          options: {
+            a: "40 দিন",
+            b: "80 দিন",
+            c: "400 দিন",
+            d: "অসীম সময়",
+          },
+          correct: "d",
+          explanation:
+            "<p>তেজস্ক্রিয় ক্ষয় একটি সূচকীয় প্রক্রিয়া। প্রতিটি অর্ধায়ুতে পদার্থের পরিমাণ অর্ধেক হতে থাকে, কিন্তু কখনোই শূন্যে পৌঁছায় না। তাত্ত্বিকভাবে, কোনো তেজস্ক্রিয় মৌল সম্পূর্ণ ক্ষয় হতে অসীম সময় লাগে।</p>",
+        },
+        {
+          id: 26,
+          question:
+            "কোনো তেজস্ক্রিয় পদার্থের অর্ধায়ু 3.82 দিন। কতদিন পর উক্ত মৌলের 60% অংশ ক্ষয় হবে?",
+          options: {
+            a: "8.05 d",
+            b: "5.05 d",
+            c: "7.50 d",
+            d: "12.05 d",
+          },
+          correct: "b",
+          explanation:
+            "<p>60% ক্ষয় হলে অবশিষ্ট থাকে 40% বা 0.40 অংশ।<br>N/N₀ = e<sup>-λt</sup> => 0.40 = e<sup>-(ln(2)/3.82)t</sup><br>ln(0.40) = -(0.693/3.82)t<br>-0.916 = -0.181t<br>t ≈ 5.05 দিন।</p>",
+        },
+        {
+          id: 27,
+          question:
+            "10 গ্রাম ভরের একটি তেজস্ক্রিয় মৌল α-কণা বিকিরণ করে। এক অর্ধ জীবন পরে এর ভর কত হবে?",
+          options: {
+            a: "5 গ্রাম",
+            b: "প্রায় 10 গ্রাম",
+            c: "10 গ্রাম",
+            d: "কোনোটিই নয়",
+          },
+          correct: "a",
+          explanation:
+            "<p>অর্ধায়ু মানে হলো যে সময়ে পদার্থের অর্ধেক পরিমাণ ক্ষয়প্রাপ্ত হয়।<br>প্রাথমিক ভর = 10 গ্রাম।<br>এক অর্ধ জীবন পর, পদার্থের পরিমাণ হবে 10 / 2 = 5 গ্রাম।</p>",
+        },
+        {
+          id: 28,
+          question:
+            "একটি নিউক্লিয়াস একটি নিউট্রন গ্রহণ করে একটি বিটা কণা (β) নিঃসরণ করে ও দুটি আলফা কণায় পরিণত হয়। আদি নিউক্লিয়াসের A এবং Z যথাক্রমে ছিল-",
+          options: {
+            a: "6, 3",
+            b: "7, 2",
+            c: "7, 3",
+            d: "8, 4",
+          },
+          correct: "c",
+          explanation:
+            "<p>ধরি আদি নিউক্লিয়াস <sub>Z</sub>X<sup>A</sup>।<br>বিক্রিয়া: <sub>Z</sub>X<sup>A</sup> + <sub>0</sub>n<sup>1</sup> → <sub>-1</sub>e<sup>0</sup> + 2 * <sub>2</sub>He<sup>4</sup><br>ভর সংখ্যা সংরক্ষণ: A + 1 = 0 + 2*4 => A = 7<br>প্রোটন সংখ্যা সংরক্ষণ: Z + 0 = -1 + 2*2 => Z = 3<br>সুতরাং, আদি নিউক্লিয়াস ছিল <sub>3</sub>Li<sup>7</sup>। A=7, Z=3।</p>",
+        },
+        {
+          id: 29,
+          question:
+            "চার ঘণ্টা পর কোনো তেজস্ক্রিয় বস্তুর প্রাথমিক পরিমাণের 1/16 অংশ অক্ষত থাকে। উক্ত তেজস্ক্রিয় বস্তুর অর্ধজীবন হলো-",
+          options: {
+            a: "15 মিনিট",
+            b: "30 মিনিট",
+            c: "45 মিনিট",
+            d: "1 ঘণ্টা",
+          },
+          correct: "d",
+          explanation:
+            "<p>অবশিষ্ট অংশ 1/16 = (1/2)⁴। সুতরাং, 4টি অর্ধায়ু সময় পার হয়েছে।<br>মোট সময় = 4 ঘণ্টা।<br>অর্ধায়ু = 4 ঘণ্টা / 4 = 1 ঘণ্টা।</p>",
+        },
+        {
+          id: 30,
+          question:
+            "একটি তেজস্ক্রিয় মৌলের গড় আয়ু 1 বছর হলে, এর অর্ধায়ু হবে-",
+          options: {
+            a: "0.693 বছর",
+            b: "0.5 বছর",
+            c: "0.4 বছর",
+            d: "0.75 বছর",
+          },
+          correct: "a",
+          explanation:
+            "<p>অর্ধায়ু (T<sub>1/2</sub>) = গড় আয়ু (τ) * ln(2) ≈ 1 বছর * 0.693 = 0.693 বছর।</p>",
+        },
+        {
+          id: 31,
+          question:
+            "ধরা যাক, Co-60 তেজস্ক্রিয় পদার্থের অর্ধায়ু 5 বছর। কত বছর পরে ঐ তেজস্ক্রিয় পদার্থের তেজস্ক্রিয়তা কমে প্রাথমিক অবস্থার 1/32 হ্রাস পাবে?",
+          options: {
+            a: "10 y",
+            b: "16 y",
+            c: "25 y",
+            d: "32 y",
+          },
+          correct: "c",
+          explanation:
+            "<p>অবশিষ্ট তেজস্ক্রিয়তা 1/32 = (1/2)⁵। সুতরাং, 5টি অর্ধায়ু সময় লাগবে।<br>মোট সময় = 5 * অর্ধায়ু = 5 * 5 বছর = 25 বছর।</p>",
+        },
+        {
+          id: 32,
+          question: "2u (বা 2 amu) ভরের সমতুল্য শক্তি কত?",
+          options: {
+            a: "931.5 MeV",
+            b: "1863 MeV",
+            c: "1863 eV",
+            d: "931.5 eV",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, 1 u ভরের সমতুল্য শক্তি হলো 931.5 MeV।<br>সুতরাং, 2u ভরের সমতুল্য শক্তি হবে: 2 * 931.5 MeV = 1863 MeV।</p>",
+        },
+        {
+          id: 33,
+          question:
+            "2 ঘণ্টা পরে কোনো তেজস্ক্রিয় মৌলের 1/16 অংশ অবশিষ্ট থাকে। মৌলটির অর্ধজীবন কত?",
+          options: {
+            a: "30 মিনিট",
+            b: "15 মিনিট",
+            c: "45 মিনিট",
+            d: "1 ঘণ্টা",
+          },
+          correct: "a",
+          explanation:
+            "<p>অবশিষ্ট অংশ 1/16 = (1/2)⁴। সুতরাং, 4টি অর্ধায়ু সময় পার হয়েছে।<br>মোট সময় = 2 ঘণ্টা = 120 মিনিট।<br>অর্ধায়ু = 120 মিনিট / 4 = 30 মিনিট।</p>",
+        },
+        {
+          id: 34,
+          question:
+            "কোনো তেজস্ক্রিয় মৌলের 1/16 দিন পর 1/16 অংশ অবশিষ্ট থাকলে অর্ধায়ু হবে-",
+          options: {
+            a: "12 ঘণ্টা",
+            b: "6 ঘণ্টা",
+            c: "3 ঘণ্টা",
+            d: "2 ঘণ্টা",
+          },
+          correct: "b",
+          explanation:
+            "<p>অবশিষ্ট অংশ 1/16 = (1/2)⁴। সুতরাং, 4টি অর্ধায়ু সময় পার হয়েছে।<br>মোট সময় = 1/16 দিন * 24 ঘণ্টা/দিন = 1.5 ঘণ্টা।<br>অর্ধায়ু = 1.5 ঘণ্টা / 4 = 0.375 ঘণ্টা = 22.5 মিনিট।<br>প্রশ্নের বিকল্প এবং উত্তরের মধ্যে অসঙ্গতি রয়েছে। যদি মোট সময় 24 ঘণ্টা ধরা হয়, তাহলে অর্ধায়ু 6 ঘণ্টা হয়।</p>",
+        },
+        {
+          id: 35,
+          question:
+            "কোনো তেজস্ক্রিয় পদার্থের ক্ষয় ধ্রুবক λ। ঐ পদার্থের অর্ধায়ু ও গড় আয়ু কী হবে?",
+          options: {
+            a: "ln2/λ, 2/λ",
+            b: "ln2/λ, 1/λ",
+            c: "1/λ, ln2/λ",
+            d: "λ/ln2, λ",
+          },
+          correct: "b",
+          explanation:
+            "<p>তেজস্ক্রিয় পদার্থের অর্ধায়ু (T<sub>1/2</sub>) = ln(2) / λ এবং গড় আয়ু (τ) = 1 / λ।</p>",
+        },
+        {
+          id: 36,
+          question:
+            "একটি তেজস্ক্রিয় পদার্থের অর্ধায়ু 3 মিনিট হলে এর ক্ষয় ধ্রুবক কত?",
+          options: {
+            a: "0.231 s⁻¹",
+            b: "0.231 min⁻¹",
+            c: "0.312 s⁻¹",
+            d: "0.312 min⁻¹",
+          },
+          correct: "b",
+          explanation:
+            "<p>ক্ষয় ধ্রুবক (λ) = ln(2) / T<sub>1/2</sub> ≈ 0.693 / 3 ≈ 0.231 min⁻¹।</p>",
+        },
+        {
+          id: 37,
+          question:
+            "কোনো একটি তেজস্ক্রিয় পদার্থের অর্ধায়ু 10 বছর। 20 বছরে ঐ পদার্থের একটি বস্তুখণ্ডের কত অংশ ক্ষয়প্রাপ্ত হবে?",
+          options: {
+            a: "1/4",
+            b: "1/2",
+            c: "3/4",
+            d: "3/2",
+          },
+          correct: "c",
+          explanation:
+            "<p>মোট সময় = 20 বছর। অর্ধায়ু = 10 বছর।<br>অর্ধায়ুর সংখ্যা (n) = 20/10 = 2।<br>অবশিষ্ট অংশ = (1/2)² = 1/4।<br>ক্ষয়প্রাপ্ত অংশ = 1 - 1/4 = 3/4।</p>",
+        },
+        {
+          id: 38,
+          question: "রেডনের অর্ধায়ু 4 দিন। এর গড় আয়ু হলো-",
+          options: {
+            a: "5.77 দিন",
+            b: "4.33 দিন",
+            c: "3.77 দিন",
+            d: "1.77 দিন",
+          },
+          correct: "a",
+          explanation:
+            "<p>গড় আয়ু (τ) = T<sub>1/2</sub> / ln(2) ≈ 4 / 0.693 ≈ 5.77 দিন।</p>",
+        },
+        {
+          id: 39,
+          question:
+            "ধরা যাক, তিনটি কণার যুক্ত অবস্থার স্থির ভর যথাক্রমে 1, 1.5, 2.5 amu। এদের দ্বারা গঠিত কণার স্থায়ী ভর 4.98 amu হলে, এর বন্ধন শক্তি কত MeV?",
+          options: {
+            a: "9.31",
+            b: "18.62",
+            c: "37.24",
+            d: "74.84",
+          },
+          correct: "b",
+          explanation:
+            "<p>মোট স্বাধীন কণার ভর = 1 + 1.5 + 2.5 = 5.0 amu।<br>ভর ত্রুটি (Δm) = 5.0 - 4.98 = 0.02 amu।<br>বন্ধন শক্তি = Δm * 931.5 MeV/amu = 0.02 * 931.5 = 18.63 MeV।</p>",
+        },
+        {
+          id: 40,
+          question:
+            "একটি নিউক্লিয়াসের ভর ত্রুটি 0.0377 a.m.u হলে এর বন্ধন শক্তি কত?",
+          options: {
+            a: "3.51 MeV",
+            b: "35.2 MeV",
+            c: "37.7 MeV",
+            d: "931 MeV",
+          },
+          correct: "b",
+          explanation:
+            "<p>বন্ধন শক্তি = ভর ত্রুটি * 931.5 MeV/amu = 0.0377 * 931.5 ≈ 35.12 MeV।</p>",
+        },
+        {
+          id: 41,
+          question:
+            "হাইড্রোজেন পরমাণুর প্রথম বোর কক্ষের ইলেকট্রনটি 1s-এ কতবার আবর্তন করে-",
+          options: {
+            a: "6.58 x 10¹⁵",
+            b: "4.13 x 10¹⁶",
+            c: "1.64 x 10¹⁵",
+            d: "4.13 x 10¹⁵",
+          },
+          correct: "a",
+          explanation:
+            "<p>ইলেকট্রনের গতিবেগ (v₁) ≈ 2.18 x 10⁶ m/s, ব্যাসার্ধ (r₁) ≈ 0.529 x 10⁻¹⁰ m।<br>আবর্তনকাল (T) = 2πr₁ / v₁ ≈ 1.52 x 10⁻¹⁶ s।<br>আবর্তন সংখ্যা (f) = 1/T ≈ 1 / (1.52 x 10⁻¹⁶) ≈ 6.58 x 10¹⁵ বার/সেকেন্ড।</p>",
+        },
+        {
+          id: 42,
+          question:
+            "সমপরিমাণ দুটি তেজস্ক্রিয় পদার্থের মধ্যে একটির অর্ধায়ু 10 দিন এবং অপরটির অবক্ষয় ধ্রুবক 0.03465 d⁻¹। প্রথম পদার্থটির গড় আয়ু কত?",
+          options: {
+            a: "10 d",
+            b: "14.43 d",
+            c: "17.63 d",
+            d: "20 d",
+          },
+          correct: "b",
+          explanation:
+            "<p>প্রথম পদার্থটির অর্ধায়ু (T<sub>1/2</sub>) = 10 দিন।<br>গড় আয়ু (τ) = T<sub>1/2</sub> / ln(2) ≈ 10 / 0.693 ≈ 14.43 দিন।</p>",
+        },
+        {
+          id: 43,
+          question:
+            "বোর তত্ত্ব অনুসারে Li⁺⁺ আয়নের (Z = 3) ভূমিস্তর থেকে একটি ইলেকট্রনকে বের করতে প্রয়োজনীয় ন্যূনতম শক্তি-",
+          options: {
+            a: "1.51 eV",
+            b: "13.6 eV",
+            c: "40.8 eV",
+            d: "122.4 eV",
+          },
+          correct: "d",
+          explanation:
+            "<p>ভূমিস্তরের শক্তি (E₁) = -13.6 * (Z²/n²) eV = -13.6 * (3²/1²) = -122.4 eV।<br>ইলেকট্রনকে বের করতে প্রয়োজনীয় ন্যূনতম শক্তি হলো এই শক্তির পরম মান, অর্থাৎ 122.4 eV।</p>",
+        },
+        {
+          id: 44,
+          question:
+            "কোনো বস্তুর অর্ধায়ু 1500 বছর, কতদিন পর মূল অংশ অর্ধেক হবে?",
+          options: {
+            a: "2.555 x 10⁵ days",
+            b: "3.655 x 10⁵ days",
+            c: "4.475 x 10⁵ days",
+            d: "5.476 x 10⁵ days",
+          },
+          correct: "d",
+          explanation:
+            "<p>অর্ধায়ু মানেই হলো যে সময় পর মূল অংশ অর্ধেক হবে।<br>সময় = 1500 বছর = 1500 * 365.25 দিন ≈ 547,875 দিন ≈ 5.48 x 10⁵ দিন।</p>",
+        },
+        {
+          id: 45,
+          question:
+            "একটি তেজস্ক্রিয় পদার্থের অর্ধায়ু 20 min। 20% থেকে 80% এর মধ্যে ক্ষয় হতে সময় লাগবে-",
+          options: {
+            a: "20 min",
+            b: "30 min",
+            c: "40 min",
+            d: "None of these",
+          },
+          correct: "c",
+          explanation:
+            "<p>20% ক্ষয় হলে অবশিষ্ট থাকে 80%। 80% ক্ষয় হলে অবশিষ্ট থাকে 20%।<br>80% থেকে 20% হতে সময় = (অবশিষ্ট 1/4) - (অবশিষ্ট 4/5)।<br>t₂ (20% অবশিষ্ট) = 2 * অর্ধায়ু = 40 মিনিট।<br>t₁ (80% অবশিষ্ট) ≈ 0.32 * অর্ধায়ু ≈ 6.4 মিনিট।<br>সময় = t₂ - t₁ ≈ 40 - 6.4 ≈ 33.6 মিনিট। প্রশ্নের উত্তরে সম্ভবত সরল গণনা করা হয়েছে: 80% থেকে 40% (1 অর্ধায়ু) + 40% থেকে 20% (1 অর্ধায়ু) = 2 অর্ধায়ু = 40 মিনিট।</p>",
+        },
+        {
+          id: 46,
+          question:
+            "একখণ্ড রেডিয়াম 500 বছর তেজস্ক্রিয় বিকিরণ নিঃসরণ করে এক-পঞ্চমাংশে পরিণত হয়। রেডিয়ামের অবক্ষয় ধ্রুবক কত?",
+          options: {
+            a: "2.5 x 10⁻⁷ y⁻¹",
+            b: "3.5 x 10⁻⁶ y⁻¹",
+            c: "2.4 x 10⁻⁴ y⁻¹",
+            d: "3.2 x 10⁻³ y⁻¹",
+          },
+          correct: "d",
+          explanation:
+            "<p>N/N₀ = e<sup>-λt</sup> => 1/5 = e<sup>-λ*500</sup><br>ln(1/5) = -500λ<br>-1.609 = -500λ<br>λ ≈ 0.003218 y⁻¹ ≈ 3.2 x 10⁻³ y⁻¹।</p>",
+        },
+        {
+          id: 47,
+          question: "রেডিয়ামের গড় আয়ু 2341 y। এর অবক্ষয় ধ্রুবকের মান কত?",
+          options: {
+            a: "4.27 x 10⁻⁴ y⁻¹",
+            b: "0.091 y⁻¹",
+            c: "0.063 y⁻¹",
+            d: "3.21 x 10⁻⁵ y⁻¹",
+          },
+          correct: "a",
+          explanation:
+            "<p>অবক্ষয় ধ্রুবক (λ) = 1 / গড় আয়ু (τ) = 1 / 2341 ≈ 0.000427 y⁻¹ = 4.27 x 10⁻⁴ y⁻¹।</p>",
+        },
+        {
+          id: 48,
+          question:
+            "9.0 x 10⁻¹³ cm ব্যাসার্ধের একটি পরমাণুর নিউক্লিয়াসের (Z = 50) পৃষ্ঠে তড়িৎ বিভবের মান-",
+          options: {
+            a: "9 V",
+            b: "60 V",
+            c: "9 x 10⁵ V",
+            d: "8 x 10⁶ V",
+          },
+          correct: "d",
+          explanation:
+            "<p>V = kQ / r = k(Ze) / r<br>V = (9 x 10⁹) * (50 * 1.6 x 10⁻¹⁹) / (9.0 x 10⁻¹⁵ m)<br>V = 8 x 10⁶ V।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                            <label class="option" data-option="${option}">
+                                            <div class="circle">${option}</div>
+                                            <span class="option-text">${question.options[option]}</span>
+                                            </label>`;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                                                     <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                                                     <div class="explanation-content">
+                                                                                                       <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                                                       ${question.explanation}
+                                                                                                     </div>
+                                                                                                   </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                                                <p class="question-label">${
+                                                                                                  index +
+                                                                                                  1
+                                                                                                }. ${
+            question.question
+          }</p>
+                                                                                                <div class="options">
+                                                                                                  ${optionsHTML}
+                                                                                                </div>
+                                                                                                ${explanationHTML}
+                                                                                              `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
